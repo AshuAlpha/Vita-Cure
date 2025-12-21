@@ -25,14 +25,18 @@ class VitaCureGUI:
 
         self.create_widgets()
 
+    def _create_button(self, text, command, bg_color, pady=10):
+        """Helper method to create a button with consistent styling."""
+        button = tk.Button(self.root, text=text, command=command,
+                          height=2, width=25, bg=bg_color, fg="white", font=("Arial", 12, "bold"))
+        button.pack(pady=pady)
+        return button
+
     def create_widgets(self):
         self.chat_area = scrolledtext.ScrolledText(self.root, wrap=tk.WORD, width=60, height=18, font=("Arial", 12))
         self.chat_area.pack(padx=10, pady=10)
 
-        self.voice_button = tk.Button(self.root, text="🎤 Start Voice Input",
-                                      command=self.handle_voice_input,
-                                      height=2, width=25, bg="#4CAF50", fg="white", font=("Arial", 12, "bold"))
-        self.voice_button.pack(pady=10)
+        self.voice_button = self._create_button("🎤 Start Voice Input", self.handle_voice_input, "#4CAF50")
 
         self.text_label = tk.Label(self.root, text="Or type your sickness below:", bg="#f0f0f0", font=("Arial", 12, "italic"))
         self.text_label.pack(pady=5)
@@ -40,19 +44,11 @@ class VitaCureGUI:
         self.text_entry = tk.Entry(self.root, width=50, font=("Arial", 12))
         self.text_entry.pack(pady=5)
 
-        self.submit_button = tk.Button(self.root, text="💊 Submit",
-                                       command=self.handle_text_input,
-                                       height=2, width=25, bg="#9C27B0", fg="white", font=("Arial", 12, "bold"))
-        self.submit_button.pack(pady=10)
+        self.submit_button = self._create_button("💊 Submit", self.handle_text_input, "#9C27B0")
 
-        self.prescription_button = tk.Button(self.root, text="📜 Generate Prescription",
-                                             command=self.generate_prescription,
-                                             height=2, width=25, bg="#2196F3", fg="white", font=("Arial", 12, "bold"))
-        self.prescription_button.pack(pady=10)
+        self.prescription_button = self._create_button("📜 Generate Prescription", self.generate_prescription, "#2196F3")
 
-        self.exit_button = tk.Button(self.root, text="❌ Exit", command=self.confirm_exit,
-                                     height=2, width=25, bg="#f44336", fg="white", font=("Arial", 12, "bold"))
-        self.exit_button.pack(pady=10)
+        self.exit_button = self._create_button("❌ Exit", self.confirm_exit, "#f44336")
 
     def speak(self, text):
         self.update_chat("VitaCure:", text)
@@ -88,14 +84,22 @@ class VitaCureGUI:
                 return f"For {disease}, {remedy}"
         return "I'm sorry, I couldn't find a remedy for that. Please consult a doctor."
 
+    def _is_exit_command(self, query):
+        """Check if the query contains an exit command."""
+        return any(exit_word in query for exit_word in ["exit", "quit", "stop"])
+
+    def _process_query(self, query):
+        """Process a query and provide remedy response."""
+        if self._is_exit_command(query):
+            self.confirm_exit()
+        else:
+            remedy = self.get_remedy(query)
+            self.speak(remedy)
+
     def handle_voice_input(self):
         query = self.listen()
         if query:
-            if any(exit_word in query for exit_word in ["exit", "quit", "stop"]):
-                self.confirm_exit()
-            else:
-                remedy = self.get_remedy(query)
-                self.speak(remedy)
+            self._process_query(query)
 
     def handle_text_input(self):
         query = self.text_entry.get().strip().lower()
@@ -103,11 +107,7 @@ class VitaCureGUI:
             self.speak("Please enter a sickness or symptom.")
             return
         self.update_chat("You:", query)
-        if any(exit_word in query for exit_word in ["exit", "quit", "stop"]):
-            self.confirm_exit()
-        else:
-            remedy = self.get_remedy(query)
-            self.speak(remedy)
+        self._process_query(query)
         self.text_entry.delete(0, tk.END)
 
     def generate_prescription(self):
